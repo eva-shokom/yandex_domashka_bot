@@ -27,6 +27,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 RETRY_PERIOD = 600
+ONE_WEEK_TIME = 604800
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -122,7 +123,7 @@ def main():
     check_tokens()
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
+    timestamp = int(time.time() - ONE_WEEK_TIME)
 
     prev_message = ''
 
