@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import time
+from http import HTTPStatus
 
 import requests
 import telegram
@@ -67,17 +68,16 @@ def get_api_answer(timestamp):
     try:
         payload = {'from_date': timestamp}
         response = requests.get(ENDPOINT, headers=HEADERS, params=payload)
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             logger.error(
-                'Сбой в работе программы: Эндпоинт https://practicum.yandex.ru'
-                '/api/user_api/homework_statuses/111 недоступен. '
+                f'Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен.'
             )
-            raise HttpStatusException
+            raise HttpStatusException()
     except requests.RequestException:
         logger.error(
-            'Возникла проблема при запросе к эндпоинту '
-            'https://practicum.yandex.ru/api/user_api/homework_statuses/111.'
+            f'Возникла проблема при запросе к эндпоинту {ENDPOINT}'
         )
+        raise HttpStatusException()
     return response.json()
 
 
@@ -85,16 +85,16 @@ def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     if not isinstance(response, dict):
         logger.error('Ответ не является словарём')
-        raise TypeError()
+        raise TypeError('Ответ не является словарём')
     if 'homeworks' not in response:
         logger.error('В словаре отсутсвует ключ "homework"')
-        raise KeyError()
+        raise KeyError('В словаре отсутсвует ключ "homework"')
     if not isinstance(response['homeworks'], list):
         logger.error('Значение ключа "homework" не является списком')
-        raise TypeError()
+        raise TypeError('Значение ключа "homework" не является списком')
     if 'current_date' not in response:
         logger.error('В словаре отсутсвует ключ "current_date"')
-        raise KeyError
+        raise KeyError('В словаре отсутсвует ключ "current_date"')
     if len(response['homeworks']) == 0:
         logger.error('Список домашних работ пуст')
     return response['homeworks'][0]
@@ -102,15 +102,12 @@ def check_response(response):
 
 def parse_status(homework):
     """Извлекает из информации о домашней работе статус этой работы."""
-    status = ''
     try:
         homework_name = homework['homework_name']
-        new_status = homework['status']
-        if new_status != status:
-            status = new_status
-            if status not in HOMEWORK_VERDICTS:
-                logger.error('Неожиданный статус домашней работы, '
-                             'обнаруженный в ответе API')
+        status = homework['status']
+        if status not in HOMEWORK_VERDICTS:
+            logger.error('Неожиданный статус домашней работы, '
+                         'обнаруженный в ответе API')
         verdict = HOMEWORK_VERDICTS[status]
     except Exception:
         logger.error('Проблема с извлечением статуса домашней работы')
